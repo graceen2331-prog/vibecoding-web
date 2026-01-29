@@ -1,0 +1,112 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  progress      UserProgress[]
+  achievements  UserAchievement[]
+  projects      SharedProject[]
+  
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  level       String   @default("beginner")
+  duration    Int      // 分钟
+  order       Int      @unique
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  progress    UserProgress[]
+  projects    SharedProject[]
+  
+  @@map("courses")
+}
+
+model UserProgress {
+  id    String @id @default(cuid())
+  
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  status       String   @default("not_started") // not_started, in_progress, completed
+  codeSubmission String?
+  completedAt  DateTime?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([userId, courseId])
+  @@map("user_progress")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  badgeColor  String?
+  
+  createdAt DateTime @default(now())
+  
+  // Relations
+  users UserAchievement[]
+  
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id    String @id @default(cuid())
+  
+  userId        String
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  unlockedAt DateTime @default(now())
+  
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model SharedProject {
+  id            String   @id @default(cuid())
+  
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  courseId  String
+  course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  projectData String  // 项目参数和数据（JSON 字符串）
+  shareToken  String  @unique @default(cuid())
+  viewCount   Int     @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("shared_projects")
+}
