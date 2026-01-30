@@ -29,6 +29,12 @@ app.use(cors({
     // 允许没有origin的请求（如移动端app或curl）
     if (!origin) return callback(null, true)
     
+    // 允许所有 vercel.app 子域名
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true)
+    }
+    
+    // 允许配置的域名
     if (allowedOrigins.includes(origin)) {
       callback(null, true)
     } else {
