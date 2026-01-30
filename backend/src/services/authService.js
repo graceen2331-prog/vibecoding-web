@@ -1,39 +1,11 @@
 // backend/src/services/authService.js
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 import prisma from '../lib/prisma.js'
 
-// 简单邮件配置（开发环境用 ethereal，生产用真实邮箱）
-let transporter
-
-async function initTransporter() {
-  if (process.env.NODE_ENV === 'production') {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    })
-  } else {
-    // 开发环境：创建测试账户
-    const testAccount = await nodemailer.createTestAccount()
-    transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    })
-  }
-}
-
-// 初始化
-await initTransporter()
+// 初始化 Resend（如果配置了API Key）
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 export async function sendMagicLink(email) {
   // 生成 token
@@ -48,51 +20,53 @@ export async function sendMagicLink(email) {
 
   // 发送邮件
   try {
-    // 如果没有配置SMTP，使用开发模式（直接返回token）
-    const isSmtpConfigured = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
-    
-    if (!isSmtpConfigured) {
+    // 如果没有配置 Resend API Key，使用开发模式
+    if (!resend) {
       console.log(`\n${'='.repeat(80)}`)
       console.log(`📧 Magic Link for ${email}:`)
       console.log(`${magicLink}`)
       console.log(`Token: ${token}`)
-      console.log(`⚠️  SMTP未配置，使用开发模式`)
+      console.log(`⚠️  RESEND_API_KEY 未配置，使用开发模式`)
       console.log(`${'='.repeat(80)}\n`)
       return { success: true, token }
     }
 
-    // 生产模式：发送真实邮件
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || 'noreply@vibecoding.io',
-      to: email,
+    // 使用 Resend 发送邮件
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'Vibe Coding <onboarding@resend.dev>',
+      to: [email],
       subject: '🎯 Vibe Coding - 你的登陆链接已就绪',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1>🚀 欢迎来到 Vibe Coding</h1>
-          <p>点击下方按钮，开始你的编程之旅：</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #667eea;">🚀 欢迎来到 Vibe Coding</h1>
+          <p style="font-size: 16px; color: #333;">点击下方按钮，开始你的编程之旅：</p>
           <a href="${magicLink}" 
              style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; 
-                    font-weight: bold; margin: 20px 0;">
+                    color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; 
+                    font-weight: bold; margin: 20px 0; font-size: 16px;">
             🔗 立即登陆
           </a>
-          <p style="color: #666; font-size: 12px; margin-top: 30px;">
-            或复制此链接：<br/>
-            <code>${magicLink}</code>
+          <p style="color: #666; font-size: 13px; margin-top: 30px;">
+            或复制此链接到浏览器：<br/>
+            <code style="background: #f5f5f5; padding: 8px; display: block; margin-top: 8px; word-break: break-all;">${magicLink}</code>
           </p>
-          <p style="color: #999; font-size: 12px;">
-            此链接 15 分钟后过期。
+          <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            ⏰ 此链接 15 分钟后过期
+          </p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+          <p style="color: #999; font-size: 11px;">
+            如果你没有请求此链接，请忽略此邮件。
           </p>
         </div>
       `,
-      text: `点击链接登陆：${magicLink}`,
     })
 
-    console.log(`✉️ Magic Link 已发送到 ${email}`)
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`📧 预览链接：${nodemailer.getTestMessageUrl(info)}`)
+    if (error) {
+      console.error('Resend 发送失败:', error)
+      throw new Error(error.message)
     }
 
+    console.log(`✉️ Magic Link 已通过 Resend 发送到 ${email}`, data)
     return { success: true }
   } catch (error) {
     console.error('发送邮件失败:', error)
