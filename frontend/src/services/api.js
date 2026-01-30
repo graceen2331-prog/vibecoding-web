@@ -1,7 +1,22 @@
 // frontend/src/services/api.js
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+// 根据环境确定API地址
+const getApiUrl = () => {
+  // 优先使用环境变量
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL
+  }
+  // 生产环境默认使用Render后端
+  if (import.meta.env.PROD) {
+    return 'https://vibecoding-web-1.onrender.com'
+  }
+  // 开发环境使用本地
+  return 'http://localhost:3001'
+}
+
+const API_URL = getApiUrl()
+console.log('API URL:', API_URL) // 调试用
 
 const api = axios.create({
   baseURL: API_URL,
