@@ -128,8 +128,16 @@ export async function verifyMagicLink(token) {
       },
     }
   } catch (error) {
-    console.error('Token 验证失败:', error)
-    throw new Error('Invalid or expired token')
+    console.error('Token 验证失败:', error.message)
+    console.error('错误详情:', error)
+    // 返回更具体的错误信息
+    if (error.name === 'TokenExpiredError') {
+      throw new Error('Token已过期，请重新登录')
+    }
+    if (error.name === 'JsonWebTokenError') {
+      throw new Error('Token无效')
+    }
+    throw new Error('验证失败: ' + error.message)
   }
 }
 
