@@ -8,11 +8,5 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "env": [
-    "VITE_API_URL",
-    "VITE_APP_URL",
-    "VITE_SUPABASE_URL",
-    "VITE_SUPABASE_ANON_KEY"
   ]
 }
