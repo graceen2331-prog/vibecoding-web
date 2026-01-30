@@ -104,6 +104,48 @@ router.post('/:courseId/complete', authMiddleware, async (req, res) => {
   }
 })
 
+// 获取用户整体进度统计（需要认证）
+router.get('/user/stats', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.user
+
+    // 获取总课程数
+    const totalCourses = await prisma.course.count()
+
+    // 获取用户完成的课程数
+    const completedCourses = await prisma.userProgress.count({
+      where: {
+        userId,
+        status: 'completed'
+      }
+    })
+
+    // 获取用户解锁的成就数
+    const unlockedAchievements = await prisma.userAchievement.count({
+      where: { userId }
+    })
+
+    // 获取成就总数
+    const totalAchievements = await prisma.achievement.count()
+
+    // 计算进度百分比
+    const progressPercent = totalCourses > 0 
+      ? Math.round((completedCourses / totalCourses) * 100) 
+      : 0
+
+    res.json({
+      totalCourses,
+      completedCourses,
+      progressPercent,
+      unlockedAchievements,
+      totalAchievements
+    })
+  } catch (error) {
+    console.error('Get user stats error:', error)
+    res.status(500).json({ error: 'Failed to get user stats' })
+  }
+})
+
 // 获取用户的课程进度（需要认证）
 router.get('/user/:userId/progress', authMiddleware, async (req, res) => {
   try {

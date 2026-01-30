@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { ConfigProvider } from 'antd'
+import zhCN from 'antd/locale/zh_CN'
 import LoginPage from './pages/LoginPage'
 import VerifyPage from './pages/VerifyPage'
 import HomePage from './pages/HomePage'
 import CoursePage from './pages/CoursePage'
+import AdminPage from './pages/AdminPage'
 import { useAuthStore } from './store/useAuthStore'
 
 export default function App() {
@@ -38,25 +41,28 @@ export default function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        {/* 认证路由 */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/auth/verify" element={<VerifyPage />} />
+    <ConfigProvider locale={zhCN}>
+      <Router>
+        <Routes>
+          {/* 认证路由 */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/verify" element={<VerifyPage />} />
 
-        {/* 保护的路由 */}
-        {token && user ? (
-          <>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/course/:courseId" element={<CoursePage />} />
-          </>
-        ) : (
-          <Route path="/" element={<Navigate to="/login" replace />} />
-        )}
+          {/* 保护的路由 */}
+          {token && user ? (
+            <>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/course/:courseId" element={<CoursePage />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </>
+          ) : (
+            <Route path="/" element={<Navigate to="/login" replace />} />
+          )}
 
-        {/* 默认重定向 */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+          {/* 默认重定向 */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </ConfigProvider>
   )
 }

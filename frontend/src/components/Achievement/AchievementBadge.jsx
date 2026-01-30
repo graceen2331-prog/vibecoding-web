@@ -1,14 +1,16 @@
- import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { achievementAPI } from '../../services/api'
+import { Card, Spin, Tooltip, Badge, message } from 'antd'
+import { TrophyOutlined, LockOutlined } from '@ant-design/icons'
 
-// 预定义的成就徽章
-const ACHIEVEMENTS = [
+// 预定义的成就徽章（作为默认显示）
+const DEFAULT_ACHIEVEMENTS = [
   {
     id: 'first_code',
     name: '初次编程',
     description: '运行你的第一行代码',
     icon: '🎉',
     color: 'bg-green-100 text-green-700',
-    unlocked: false
   },
   {
     id: 'hello_world',
@@ -16,7 +18,6 @@ const ACHIEVEMENTS = [
     description: '成功输出 Hello World',
     icon: '👋',
     color: 'bg-blue-100 text-blue-700',
-    unlocked: false
   },
   {
     id: 'first_variable',
@@ -24,7 +25,6 @@ const ACHIEVEMENTS = [
     description: '学会使用变量',
     icon: '📦',
     color: 'bg-purple-100 text-purple-700',
-    unlocked: false
   },
   {
     id: 'first_function',
@@ -32,7 +32,6 @@ const ACHIEVEMENTS = [
     description: '创建你的第一个函数',
     icon: '⚡',
     color: 'bg-yellow-100 text-yellow-700',
-    unlocked: false
   },
   {
     id: 'loop_master',
@@ -40,7 +39,6 @@ const ACHIEVEMENTS = [
     description: '掌握循环语句',
     icon: '🔄',
     color: 'bg-pink-100 text-pink-700',
-    unlocked: false
   },
   {
     id: 'day_complete',
@@ -48,7 +46,6 @@ const ACHIEVEMENTS = [
     description: '完成一天的所有课程',
     icon: '🌟',
     color: 'bg-orange-100 text-orange-700',
-    unlocked: false
   },
   {
     id: 'week_warrior',
@@ -56,7 +53,6 @@ const ACHIEVEMENTS = [
     description: '连续学习一周',
     icon: '🏆',
     color: 'bg-red-100 text-red-700',
-    unlocked: false
   },
   {
     id: 'coding_master',
@@ -64,53 +60,110 @@ const ACHIEVEMENTS = [
     description: '完成所有课程',
     icon: '👑',
     color: 'bg-indigo-100 text-indigo-700',
-    unlocked: false
   }
 ]
 
 export default function AchievementBadge() {
-  const [achievements, setAchievements] = useState(ACHIEVEMENTS)
+  const [achievements, setAchievements] = useState([])
+  const [userAchievements, setUserAchievements] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAchievements = async () => {
+      try {
+        // 并行获取所有成就和用户成就
+        const [allRes, userRes] = await Promise.all([
+          achievementAPI.getAllAchievements().catch(() => ({ data: [] })),
+          achievementAPI.getUserAchievements().catch(() => ({ data: [] }))
+        ])
+
+        // 如果后端有数据，使用后端数据；否则使用默认数据
+        const allAchievements = allRes.data.length > 0 ? allRes.data : DEFAULT_ACHIEVEMENTS
+        const unlockedIds = new Set(userRes.data.map(a => a.id || a.achievementId))
+
+        // 合并数据，标记已解锁的成就
+        const mergedAchievements = allAchievements.map(achievement => {
+          const defaultAch = DEFAULT_ACHIEVEMENTS.find(d => d.id === achievement.id || d.name === achievement.name)
+          return {
+            ...achievement,
+            icon: achievement.icon || defaultAch?.icon || '🏅',
+            color: defaultAch?.color || 'bg-gray-100 text-gray-700',
+            unlocked: unlockedIds.has(achievement.id)
+          }
+        })
+
+        setAchievements(mergedAchievements)
+        setUserAchievements(userRes.data)
+      } catch (error) {
+        console.error('Failed to fetch achievements:', error)
+        // 使用默认数据
+        setAchievements(DEFAULT_ACHIEVEMENTS.map(a => ({ ...a, unlocked: false })))
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAchievements()
+  }, [])
+
   const unlockedCount = achievements.filter(a => a.unlocked).length
 
+  if (loading) {
+    return (
+      <Card>
+        <div className="text-center py-8">
+          <Spin tip="加载成就中..." />
+        </div>
+      </Card>
+    )
+  }
+
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-gray-900">🏆 成就徽章</h3>
-        <span className="text-sm text-gray-500">
-          已解锁 {unlockedCount} / {achievements.length}
-        </span>
-      </div>
-      
+    <Card 
+      title={
+        <div className="flex items-center justify-between">
+          <span><TrophyOutlined className="mr-2 text-yellow-500" />成就徽章</span>
+          <span className="text-sm font-normal text-gray-500">
+            已解锁 {unlockedCount} / {achievements.length}
+          </span>
+        </div>
+      }
+    >
       <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
         {achievements.map((achievement) => (
-          <div
+          <Tooltip
             key={achievement.id}
-            className={`relative group cursor-pointer transition-transform hover:scale-110`}
-            title={achievement.name}
-          >
-            <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl
-                ${achievement.unlocked 
-                  ? achievement.color 
-                  : 'bg-gray-100 text-gray-400 grayscale'
-                }`}
-            >
-              {achievement.icon}
-            </div>
-            
-            {/* 悬浮提示 */}
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 
-                          invisible group-hover:visible opacity-0 group-hover:opacity-100 
-                          transition-opacity z-10">
-              <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap">
+            title={
+              <div>
                 <p className="font-semibold">{achievement.name}</p>
                 <p className="text-gray-300">{achievement.description}</p>
                 {!achievement.unlocked && (
-                  <p className="text-yellow-400 mt-1">🔒 未解锁</p>
+                  <p className="text-yellow-400 mt-1"><LockOutlined /> 未解锁</p>
                 )}
               </div>
+            }
+          >
+            <div className="relative cursor-pointer transition-transform hover:scale-110">
+              <Badge 
+                count={achievement.unlocked ? '✓' : <LockOutlined style={{ color: '#999' }} />}
+                offset={[-5, 5]}
+                style={{ 
+                  backgroundColor: achievement.unlocked ? '#52c41a' : '#f0f0f0',
+                  color: achievement.unlocked ? '#fff' : '#999'
+                }}
+              >
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl
+                    ${achievement.unlocked 
+                      ? achievement.color 
+                      : 'bg-gray-100 text-gray-400 grayscale'
+                    }`}
+                >
+                  {achievement.icon}
+                </div>
+              </Badge>
             </div>
-          </div>
+          </Tooltip>
         ))}
       </div>
 
@@ -119,6 +172,6 @@ export default function AchievementBadge() {
           开始学习来解锁你的第一个成就徽章！💪
         </p>
       )}
-    </div>
+    </Card>
   )
 }

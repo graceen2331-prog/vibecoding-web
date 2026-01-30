@@ -6,6 +6,8 @@ import authRoutes from './routes/authRoutes.js'
 import courseRoutes from './routes/courseRoutes.js'
 import achievementRoutes from './routes/achievementRoutes.js'
 import projectRoutes from './routes/projectRoutes.js'
+import codeRoutes from './routes/codeRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
 import prisma from './lib/prisma.js'
 
 dotenv.config()
@@ -19,6 +21,8 @@ app.use(helmet())
 // CORS 配置 - 支持多个域名
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
   'http://localhost:3000',
   process.env.CORS_ORIGIN,
   process.env.FRONTEND_URL,
@@ -56,6 +60,8 @@ app.use('/api/auth', authRoutes)
 app.use('/api/courses', courseRoutes)
 app.use('/api/achievements', achievementRoutes)
 app.use('/api/projects', projectRoutes)
+app.use('/api/code', codeRoutes)
+app.use('/api/admin', adminRoutes)
 
 // 错误处理
 app.use((err, req, res, next) => {

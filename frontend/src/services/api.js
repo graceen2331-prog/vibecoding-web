@@ -56,6 +56,18 @@ export const courseAPI = {
   
   getUserProgress: (courseId) =>
     api.get(`/api/courses/${courseId}/progress`),
+  
+  getUserStats: () =>
+    api.get('/api/courses/user/stats'),
+}
+
+// 代码验证 API
+export const codeAPI = {
+  validate: (code, courseId) =>
+    api.post('/api/code/validate', { code, courseId }),
+  
+  run: (code) =>
+    api.post('/api/code/run', { code }),
 }
 
 // 成就相关 API
