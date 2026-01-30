@@ -39,29 +39,33 @@ app.use((err, req, res, next) => {
 
 // 启动服务器
 const startServer = async () => {
+  // 先启动HTTP服务器，确保Render健康检查通过
+  const server = app.listen(PORT, () => {
+    console.log(`✅ Vibe Coding Backend running on port ${PORT}`)
+    console.log(`   API: http://localhost:${PORT}/api/health`)
+  })
+
+  // 然后异步测试数据库连接（不阻塞启动）
   try {
-    // 测试数据库连接
     await prisma.$queryRaw`SELECT 1`
     console.log('✅ 数据库连接成功')
-    
-    app.listen(PORT, () => {
-      console.log(`✅ Vibe Coding Backend running on port ${PORT}`)
-      console.log(`   API: http://localhost:${PORT}/api/health`)
-      console.log(`   Auth: http://localhost:${PORT}/api/auth/login`)
-      console.log(`   Courses: http://localhost:${PORT}/api/courses`)
-    })
   } catch (error) {
-    console.error('❌ 数据库连接失败:', error.message)
-    console.log('📝 请确保 DATABASE_URL 环境变量已正确配置')
-    process.exit(1)
+    console.warn('⚠️ 数据库连接失败:', error.message)
+    console.warn('⚠️ 部分功能可能不可用，但服务已启动')
+    // 不退出，让服务继续运行
   }
 }
 
 startServer()
 
 // 优雅关闭
+// 注意：如果数据库连接失败，prisma.$disconnect() 可能会报错，可以简单包裹一下
 process.on('SIGINT', async () => {
   console.log('\n关闭服务器...')
-  await prisma.$disconnect()
+  try {
+    await prisma.$disconnect()
+  } catch (e) {
+    // 忽略断开连接时的错误
+  }
   process.exit(0)
 })
