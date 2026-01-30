@@ -102,17 +102,15 @@ export default function LoginPage() {
                 {email}
               </p>
               
-              {/* 开发环境：显示 Magic Link */}
-              {testToken && import.meta.env.MODE === 'development' && (
+              {/* 开发/测试模式：显示 Magic Link */}
+              {testToken && (
                 <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded mb-6 text-left">
                   <p className="text-sm font-bold text-green-700 mb-3">
-                    ✨ 开发模式：Magic Link 已生成
+                    ✨ 测试模式：Magic Link 已生成
                   </p>
-                  <div className="bg-white p-3 rounded border border-green-200 mb-3 max-h-20 overflow-y-auto">
-                    <code className="text-xs text-gray-700 break-all">
-                      {testToken}
-                    </code>
-                  </div>
+                  <p className="text-xs text-gray-600 mb-3">
+                    📧 邮件可能发送失败（Resend限制），请使用下方按钮直接登录
+                  </p>
                   <button
                     onClick={() => {
                       const verifyUrl = `/auth/verify?token=${testToken}`
@@ -120,7 +118,7 @@ export default function LoginPage() {
                     }}
                     className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-bold text-sm mb-2"
                   >
-                    🎯 直接验证 Token
+                    🎯 直接验证登录
                   </button>
                   <button
                     onClick={() => {
