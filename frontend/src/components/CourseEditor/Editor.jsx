@@ -70,12 +70,17 @@ export default function EditorComponent({ courseId, onSave, onComplete, onCodeCh
           console.log('❌ 错误:', e.message)
         }
         
-        logs
+        return logs
       `
 
       // 使用 Function 构造器安全地执行代码
       const result = new Function(sandboxCode)()
-      setOutput(result.join('\n'))
+      // 确保 result 是数组，避免 undefined 错误
+      if (Array.isArray(result)) {
+        setOutput(result.join('\n'))
+      } else {
+        setOutput(result ? String(result) : '(无输出)')
+      }
     } catch (err) {
       setError(`❌ 执行出错: ${err.message}`)
     } finally {
