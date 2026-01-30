@@ -8,10 +8,13 @@ import prisma from '../lib/prisma.js'
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 export async function sendMagicLink(email) {
+  const secret = process.env.MAGIC_LINK_SECRET || 'secret'
+  console.log('🔑 生成token，使用secret前5位:', secret.substring(0, 5))
+  
   // 生成 token
   const token = jwt.sign(
     { email, type: 'magic_link' },
-    process.env.MAGIC_LINK_SECRET || 'secret',
+    secret,
     { expiresIn: '15m' }
   )
 
@@ -82,11 +85,11 @@ export async function sendMagicLink(email) {
 
 export async function verifyMagicLink(token) {
   try {
+    const secret = process.env.MAGIC_LINK_SECRET || 'secret'
+    console.log('🔐 验证token，使用secret前5位:', secret.substring(0, 5))
+    
     // 验证 token
-    const decoded = jwt.verify(
-      token,
-      process.env.MAGIC_LINK_SECRET || 'secret'
-    )
+    const decoded = jwt.verify(token, secret)
 
     if (decoded.type !== 'magic_link') {
       throw new Error('Invalid token type')
