@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+ import { useState, useEffect } from 'react'
 
 // 预定义的成就徽章
 const ACHIEVEMENTS = [
