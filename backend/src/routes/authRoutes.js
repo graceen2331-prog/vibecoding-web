@@ -21,8 +21,8 @@ router.post('/login', async (req, res) => {
       message: '📧 Magic Link 已发送到你的邮箱',
     }
     
-    // 开发环境返回 token 便于测试
-    if (process.env.NODE_ENV !== 'production' && result.token) {
+    // 如果有token返回（SMTP未配置时的开发模式）
+    if (result.token) {
       response.testToken = result.token
     }
     

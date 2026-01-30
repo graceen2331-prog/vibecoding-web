@@ -48,12 +48,15 @@ export async function sendMagicLink(email) {
 
   // 发送邮件
   try {
-    // 开发模式：直接返回链接给日志（便于测试）
-    if (process.env.NODE_ENV !== 'production') {
+    // 如果没有配置SMTP，使用开发模式（直接返回token）
+    const isSmtpConfigured = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
+    
+    if (!isSmtpConfigured) {
       console.log(`\n${'='.repeat(80)}`)
       console.log(`📧 Magic Link for ${email}:`)
       console.log(`${magicLink}`)
       console.log(`Token: ${token}`)
+      console.log(`⚠️  SMTP未配置，使用开发模式`)
       console.log(`${'='.repeat(80)}\n`)
       return { success: true, token }
     }
