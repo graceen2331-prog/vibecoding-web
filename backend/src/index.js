@@ -15,8 +15,28 @@ const PORT = process.env.PORT || 3001
 
 // 中间件
 app.use(helmet())
+
+// CORS 配置 - 支持多个域名
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CORS_ORIGIN,
+  process.env.FRONTEND_URL,
+].filter(Boolean) // 过滤掉undefined
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173'
+  origin: function (origin, callback) {
+    // 允许没有origin的请求（如移动端app或curl）
+    if (!origin) return callback(null, true)
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      console.log('CORS blocked:', origin)
+      callback(null, false)
+    }
+  },
+  credentials: true
 }))
 app.use(express.json())
 
